@@ -107,7 +107,7 @@ var notify = function (message) {
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
   rollbar.init("bfcfe60b41bd4e32b5f711d780fb7538");
   notify = function (message) {
-    rollbar.reportMessage(message);
+    rollbar.reportMessageWithPayloadData(message, { level: "info" });
   };
   app.use(rollbar.errorHandler(process.env.ROLLBAR_ACCESS_TOKEN));
 }
