@@ -19,9 +19,7 @@ var nextReqId = (function () {
 
 app.use(BodyParser.json());
 
-if (process.env.ROLLBAR_ACCESS_TOKEN) {
-  app.use(rollbar.errorHandler(process.env.ROLLBAR_ACCESS_TOKEN));
-}
+
 
 app.use(function (req, res, next) {
   req._startAt = process.hrtime();
@@ -89,6 +87,10 @@ app.get("/next", function (req, res, next) {
   next(new Boom.badImplementation(req.query.err || "BOOM!! next"));
 });
 
+app.get("/error", function (req, res, next) {
+  throw new Error("intentional error");
+});
+
 app.get("/*", function (req, res, next) {
   var addr = server.address();
   var loc = req.protocol + "://" + (req.hostname || "0.0.0.0") + (addr.port == 80 ? "" : ":"+ addr.port) +"/";
@@ -97,6 +99,18 @@ app.get("/*", function (req, res, next) {
     .location(loc)
     .send({ ok: false, location: loc });
 });
+
+var notify = function (message) {
+  console.log("%s [ ] - INFO - %s", new Date().valueOf(), message)
+};
+
+if (process.env.ROLLBAR_ACCESS_TOKEN) {
+  rollbar.init("bfcfe60b41bd4e32b5f711d780fb7538");
+  notify = function (message) {
+    rollbar.reportMessage(message);
+  };
+  app.use(rollbar.errorHandler(process.env.ROLLBAR_ACCESS_TOKEN));
+}
 
 app.use(function (err, req, res, next) {
   if (err.isBoom) {
@@ -109,11 +123,9 @@ app.use(function (err, req, res, next) {
       .send(err);
   }
   console.log("%s [%s] - ERR", new Date().valueOf(), req._requestId, err.stack);
-  return res.status(500).send({ statusCode: 500, error: "Server Error" });
+  // return res.status(500).send({ statusCode: 500, error: "Server Error" });
+  next(err);
 });
-
-
-
 
 var server = app.listen(process.env.PORT || 3001, function () {
   if (process.env.HEROKU_URL) {
@@ -122,5 +134,6 @@ var server = app.listen(process.env.PORT || 3001, function () {
     console.log("server listening on %s:%s",
                 server.address().address, server.address().port);
   }
+  notify("service started OK");
 });
 
