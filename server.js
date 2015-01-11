@@ -3,7 +3,7 @@ var Boom = require("boom");
 var onFinished = require("on-finished");
 var bodyParser = require("body-parser");
 var _ = require("lodash");
-
+var rollbar = require("rollbar");
 var pkg = require("./package.json");
 
 
@@ -18,6 +18,10 @@ var nextReqId = (function () {
 })();
 
 app.use(bodyParser());
+
+if (process.env.ROLLBAR_ACCESS_TOKEN) {
+  app.use(rollbar.errorhandler(process.env.ROLLBAR_ACCESS_TOKEN));
+}
 
 app.use(function (req, res, next) {
   req._startAt = process.hrtime();
