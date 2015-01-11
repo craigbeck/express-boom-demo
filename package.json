@@ -1,6 +1,6 @@
 {
   "name": "express-boom-demo",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Stupid Express app",
   "main": "server.js",
   "dependencies": {
