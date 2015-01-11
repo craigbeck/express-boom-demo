@@ -1,7 +1,7 @@
 var express = require("express.io");
 var Boom = require("boom");
 var onFinished = require("on-finished");
-var bodyParser = require("body-parser");
+var BodyParser = require("body-parser");
 var _ = require("lodash");
 var rollbar = require("rollbar");
 var pkg = require("./package.json");
@@ -17,7 +17,7 @@ var nextReqId = (function () {
   };
 })();
 
-app.use(bodyParser());
+app.use(BodyParser.json());
 
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
   app.use(rollbar.errorHandler(process.env.ROLLBAR_ACCESS_TOKEN));
@@ -32,7 +32,7 @@ app.use(function (req, res, next) {
     var elapsed = ms.toFixed(3);
     console.log("%s [%s] - %s %s %s (%sms)",
                 req._startTime.valueOf(),
-                req.headers["X-RequestId"],
+                req._requestId,
                 req.method,
                 req.path,
                 res.statusCode,
@@ -42,9 +42,8 @@ app.use(function (req, res, next) {
 });
 
 app.use(function (req, res, next) {
-  var id = nextReqId();
-  req.headers["X-RequestId"] = id;
-  res.setHeader("X-RequestId", id);
+  req._requestId = nextReqId();
+  res.setHeader("X-RequestId", req._requestId);
   next();
 });
 
@@ -92,24 +91,24 @@ app.get("/next", function (req, res, next) {
 
 app.get("/*", function (req, res, next) {
   var addr = server.address();
-  var loc = req.protocol + "://" + req.hostname + (addr.port == 80 ? "" : ":"+ addr.port) +"/";
+  var loc = req.protocol + "://" + (req.hostname || "0.0.0.0") + (addr.port == 80 ? "" : ":"+ addr.port) +"/";
   loc = process.env.HEROKU_URL || loc;
   res.status(301)
     .location(loc)
-    .send({ ok: true, location: loc });
+    .send({ ok: false, location: loc });
 });
 
 app.use(function (err, req, res, next) {
   if (err.isBoom) {
     console.log("%s [%s] - ERR %s - %s",
                 req._startTime.valueOf(),
-                req.headers["X-RequestId"],
+                req._requestId,
                 err.output.statusCode,
                 err.message);
     return res.status(err.output.statusCode)
       .send(err);
   }
-  console.log("%s [%s] - ERR", new Date().valueOf(), req.headers["X-RequestId"], err.stack);
+  console.log("%s [%s] - ERR", new Date().valueOf(), req._requestId, err.stack);
   return res.status(500).send({ statusCode: 500, error: "Server Error" });
 });
 
@@ -120,7 +119,8 @@ var server = app.listen(process.env.PORT || 3001, function () {
   if (process.env.HEROKU_URL) {
     console.log("server listening on", process.env.HEROKU_URL);
   } else {
-    console.log("server listening on %s:%s", server.address().address, server.address().port);
+    console.log("server listening on %s:%s",
+                server.address().address, server.address().port);
   }
 });
 
