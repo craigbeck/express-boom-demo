@@ -93,6 +93,7 @@ app.get("/next", function (req, res, next) {
 app.get("/*", function (req, res, next) {
   var addr = server.address();
   var loc = req.protocol + "://" + req.hostname + (addr.port == 80 ? "" : ":"+ addr.port) +"/";
+  loc = process.env.HEROKU_URL || loc;
   res.status(301)
     .location(loc)
     .send({ ok: true, location: loc });
@@ -116,6 +117,10 @@ app.use(function (err, req, res, next) {
 
 
 var server = app.listen(process.env.PORT || 3001, function () {
-  console.log("server listening on %s:%s", server.address().address, server.address().port);
+  if (process.env.HEROKU_URL) {
+    console.log("server listening on", process.env.HEROKU_URL);
+  } else {
+    console.log("server listening on %s:%s", server.address().address, server.address().port);
+  }
 });
 
