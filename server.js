@@ -20,7 +20,7 @@ var nextReqId = (function () {
 app.use(bodyParser());
 
 if (process.env.ROLLBAR_ACCESS_TOKEN) {
-  app.use(rollbar.errorhandler(process.env.ROLLBAR_ACCESS_TOKEN));
+  app.use(rollbar.errorHandler(process.env.ROLLBAR_ACCESS_TOKEN));
 }
 
 app.use(function (req, res, next) {
