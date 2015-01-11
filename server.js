@@ -111,7 +111,7 @@ app.use(function (err, req, res, next) {
 
 
 
-var server = app.listen(3001, function () {
+var server = app.listen(process.env.PORT || 3001, function () {
   console.log("server listening on %s:%s", server.address().address, server.address().port);
 });
 
